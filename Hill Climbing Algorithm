@@ -1,0 +1,57 @@
+import random
+import math
+
+
+def hill_climbing(objective, initial, neighbors, max_iters=1000, maximize=True):
+    sign = 1 if maximize else -1
+    current = initial
+    current_score = sign * objective(current)
+    for _ in range(max_iters):
+        best = None
+        best_score = current_score
+        for n in neighbors(current):
+            s = sign * objective(n)
+            if s > best_score:
+                best, best_score = n, s
+        if best is None:
+            break
+        current, current_score = best, best_score
+    return current, sign * current_score
+
+
+def random_restart_hill_climbing(objective, random_state, neighbors, restarts=20, max_iters=1000, maximize=True):
+    best_state, best_value = None, None
+    for _ in range(restarts):
+        state, value = hill_climbing(objective, random_state(), neighbors, max_iters, maximize)
+        if best_value is None or (value > best_value if maximize else value < best_value):
+            best_state, best_value = state, value
+    return best_state, best_value
+
+
+def continuous_neighbors(step=0.1):
+    def gen(point):
+        result = []
+        for i in range(len(point)):
+            for d in (-step, step):
+                p = list(point)
+                p[i] += d
+                result.append(tuple(p))
+        return result
+    return gen
+
+
+def objective(point):
+    x, y = point
+    return math.sin(x) * math.cos(y) - 0.05 * (x ** 2 + y ** 2) + 3
+
+
+def random_start():
+    return (random.uniform(-5, 5), random.uniform(-5, 5))
+
+
+if __name__ == "__main__":
+    random.seed(42)
+    state, value = hill_climbing(objective, random_start(), continuous_neighbors(0.05), max_iters=5000)
+    print("Single run:", state, value)
+    state, value = random_restart_hill_climbing(objective, random_start, continuous_neighbors(0.05), restarts=30, max_iters=5000)
+    print("Random restart:", state, value)
